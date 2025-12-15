@@ -1,0 +1,40 @@
+# --------------------
+# Node dependencies
+# --------------------
+node_modules/
+
+# --------------------
+# Environment files
+# --------------------
+.env
+.env.*
+!.env.example
+
+# --------------------
+# Next.js
+# --------------------
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# --------------------
+# NestJS
+# --------------------
+backend/dist/
+backend/.nestjs/
+
+# --------------------
+# Logs
+# --------------------
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+*.log
+
+# --------------------
+# OS / Editor files
+# --------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
