@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import configuration from './config/configuration';
 import { validationSchema } from './config/validation.schema';
@@ -22,10 +22,12 @@ import { DatabaseModule } from './database/database.module';
       validationSchema
     }),
     MongooseModule.forRootAsync({
-      useFactory: () => ({
-        uri: process.env.MONGODB_URI,
-        dbName: process.env.MONGODB_DB
-      })
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('mongodb.uri'),
+        dbName: configService.get<string>('mongodb.db')
+      }),
+      inject: [ConfigService]
     }),
     DatabaseModule,
     AuthModule,
