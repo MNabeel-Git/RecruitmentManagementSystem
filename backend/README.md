@@ -107,6 +107,20 @@ Once the application is running, you can access:
 - Description
 - isActive flag
 
+#### Client
+- Name
+- Description
+- Contact information (email, phone, address)
+- Assigned Employee (reference to User)
+- isActive flag
+
+#### Job Template
+- Name
+- Description
+- Client (reference to Client)
+- Candidate Data Schema (dynamic fields array)
+- isActive flag
+
 ### Security Features
 
 - **Password Hashing**: Bcrypt with 10 salt rounds
@@ -121,6 +135,8 @@ All schemas include proper indexes for optimal query performance:
 - User: email (unique), isActive, roles
 - Role: name (unique), isActive
 - Permission: name (unique), isActive
+- Client: assignedEmployee, isActive, name
+- Job Template: client, isActive, name
 
 ## Development
 
