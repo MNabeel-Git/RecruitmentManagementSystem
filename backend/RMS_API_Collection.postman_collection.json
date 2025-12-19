@@ -37,11 +37,172 @@
 									"if (pm.response.code === 200) {",
 									"    const json = pm.response.json();",
 									"    pm.collectionVariables.set('accessToken', json.accessToken);",
+									"    pm.collectionVariables.set('refreshToken', json.refreshToken);",
 									"}"
 								]
 							}
 						}
 					]
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						},
+						"description": "Refresh access token using refresh token."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const json = pm.response.json();",
+									"    pm.collectionVariables.set('accessToken', json.accessToken);",
+									"}"
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Roles & Permissions",
+			"item": [
+				{
+					"name": "Create Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Manager\",\n  \"description\": \"Manager role with elevated permissions\",\n  \"permissions\": [\"507f1f77bcf86cd799439011\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles-permissions/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles-permissions", "roles"]
+						},
+						"description": "Create a new role. Admin only."
+					}
+				},
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles-permissions/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles-permissions", "roles"]
+						},
+						"description": "Get all active roles. Admin only."
+					}
+				},
+				{
+					"name": "Update Role",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Updated description\",\n  \"permissions\": [\"507f1f77bcf86cd799439011\", \"507f1f77bcf86cd799439012\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles-permissions/roles/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles-permissions", "roles", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Update a role. Admin only."
+					}
+				},
+				{
+					"name": "Create Permission",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"CREATE_JOB\",\n  \"description\": \"Permission to create job vacancies\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles-permissions/permissions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles-permissions", "permissions"]
+						},
+						"description": "Create a new permission. Admin only."
+					}
+				},
+				{
+					"name": "Get All Permissions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles-permissions/permissions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles-permissions", "permissions"]
+						},
+						"description": "Get all active permissions. Admin only."
+					}
 				}
 			]
 		},
@@ -298,6 +459,302 @@
 							]
 						},
 						"description": "Soft delete a job template. Admin only."
+					}
+				}
+			]
+		},
+		{
+			"name": "Job Vacancies",
+			"item": [
+				{
+					"name": "Create Job Vacancy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Senior Software Developer\",\n  \"description\": \"Looking for experienced developer\",\n  \"client\": \"507f1f77bcf86cd799439011\",\n  \"jobTemplate\": \"507f1f77bcf86cd799439012\",\n  \"assignedAgencies\": [\"507f1f77bcf86cd799439013\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/job-vacancies",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "job-vacancies"]
+						},
+						"description": "Create a new job vacancy. Employees can create for their assigned clients only."
+					}
+				},
+				{
+					"name": "Get All Job Vacancies",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/job-vacancies?clientId=",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "job-vacancies"],
+							"query": [
+								{
+									"key": "clientId",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all job vacancies. Admins see all, Employees see only vacancies for their assigned clients."
+					}
+				},
+				{
+					"name": "Get Job Vacancy by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/job-vacancies/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "job-vacancies", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Get a specific job vacancy. Employees can only access vacancies for their assigned clients."
+					}
+				},
+				{
+					"name": "Get Candidates by Job",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/job-vacancies/:id/candidates",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "job-vacancies", ":id", "candidates"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Get all candidates for a specific job vacancy. Employees can only access vacancies for their assigned clients."
+					}
+				},
+				{
+					"name": "Update Job Vacancy",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Job Title\",\n  \"description\": \"Updated description\",\n  \"assignedAgencies\": [\"507f1f77bcf86cd799439013\", \"507f1f77bcf86cd799439014\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/job-vacancies/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "job-vacancies", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Update a job vacancy. Employees can only update vacancies they created. Edits do not affect the original template."
+					}
+				},
+				{
+					"name": "Delete Job Vacancy",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/job-vacancies/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "job-vacancies", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Soft delete a job vacancy. Employees can only delete vacancies they created."
+					}
+				}
+			]
+		},
+		{
+			"name": "Candidates",
+			"item": [
+				{
+					"name": "Create Candidate",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"jobVacancy\": \"507f1f77bcf86cd799439011\",\n  \"data\": {\n    \"fullName\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"experience\": 5\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/candidates",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "candidates"]
+						},
+						"description": "Create a new candidate. Agency users can only add candidates to jobs assigned to their agency. Candidate data must follow the job vacancy schema."
+					}
+				},
+				{
+					"name": "Get All Candidates",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/candidates?jobVacancyId=",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "candidates"],
+							"query": [
+								{
+									"key": "jobVacancyId",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all candidates. Agency users see only their candidates. Employees/Admins see candidates for their accessible jobs."
+					}
+				},
+				{
+					"name": "Get Candidate by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/candidates/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "candidates", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Get a specific candidate. Agency users can only access their candidates. Employees can access candidates for their assigned clients."
+					}
+				},
+				{
+					"name": "Update Candidate",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"data\": {\n    \"fullName\": \"John Doe Updated\",\n    \"email\": \"john.doe.updated@example.com\",\n    \"experience\": 7\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/candidates/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "candidates", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Update a candidate. Agency users can only update candidates they created. Candidate data must follow the job vacancy schema."
+					}
+				},
+				{
+					"name": "Delete Candidate",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{accessToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/candidates/:id",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "candidates", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "507f1f77bcf86cd799439011"
+								}
+							]
+						},
+						"description": "Soft delete a candidate. Agency users can only delete candidates they created."
 					}
 				}
 			]

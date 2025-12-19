@@ -22,7 +22,7 @@ export class JobTemplatesService {
     return template.save();
   }
 
-  async findAll(clientId?: string, userId?: string, userRoleNames?: string[]): Promise<JobTemplateDocument[]> {
+  async findAll(clientId?: string, userId?: string, userRoleNames?: string[], page: number = 1, limit: number = 10): Promise<{ data: JobTemplateDocument[]; total: number; page: number; limit: number; totalPages: number }> {
     const query: any = { isActive: true };
 
     if (clientId) {
@@ -32,12 +32,30 @@ export class JobTemplatesService {
     if (userRoleNames && !userRoleNames.includes('Admin') && userId) {
       const clientIds = await this.getClientIdsForEmployee(userId);
       if (clientIds.length === 0) {
-        return [];
+        return { data: [], total: 0, page, limit, totalPages: 0 };
       }
       query.client = { $in: clientIds };
     }
 
-    return this.jobTemplateModel.find(query).populate('client', 'name').exec();
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.jobTemplateModel.find(query)
+        .populate('client', 'name')
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.jobTemplateModel.countDocuments(query).exec()
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async findOne(id: string, userId?: string, userRoleNames?: string[]): Promise<JobTemplateDocument> {
@@ -65,11 +83,11 @@ export class JobTemplatesService {
       }
     }
 
-    return this.jobTemplateModel.find({ client: clientId, isActive: true }).populate('client', 'name').exec();
+    return this.jobTemplateModel.find({ client: clientId, isActive: true }).populate('client', 'name').lean().exec();
   }
 
   async remove(id: string, userId: string, userRoleNames: string[]): Promise<void> {
-    const template = await this.jobTemplateModel.findById(id).exec();
+    const template = await this.jobTemplateModel.findById(id).lean().exec();
 
     if (!template) {
       throw new NotFoundException('Job template not found');

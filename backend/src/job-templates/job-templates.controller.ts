@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
+import { PaginationDto, PaginatedResponseDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Job Templates')
 @ApiBearerAuth('JWT-auth')
@@ -45,21 +46,29 @@ export class JobTemplatesController {
   @Get()
   @Version('1')
   @ApiQuery({ name: 'clientId', required: false, description: 'Filter by client ID' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiOperation({
     summary: 'Get all job templates',
-    description: 'Get all job templates. Admins see all, Employees see only templates for their assigned clients.'
+    description: 'Get all job templates with pagination. Admins see all, Employees see only templates for their assigned clients.'
   })
-  @ApiResponse({ status: 200, description: 'List of job templates', type: [JobTemplateResponseDto] })
+  @ApiResponse({ status: 200, description: 'Paginated list of job templates' })
   async findAll(
     @Query('clientId') clientId?: string,
+    @Query() pagination?: PaginationDto,
     @GetUser() user?: any
-  ): Promise<JobTemplateResponseDto[]> {
-    const templates = await this.jobTemplatesService.findAll(
+  ): Promise<PaginatedResponseDto<JobTemplateResponseDto>> {
+    const result = await this.jobTemplatesService.findAll(
       clientId,
       user?.id,
-      user?.roleNames || []
+      user?.roleNames || [],
+      pagination?.page,
+      pagination?.limit
     );
-    return templates.map(template => this.mapToResponseDto(template));
+    return {
+      ...result,
+      data: result.data.map(template => this.mapToResponseDto(template))
+    };
   }
 
   @Get('client/:clientId')

@@ -7,9 +7,10 @@ import {
   Param,
   Delete,
   UseGuards,
-  Version
+  Version,
+  Query
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -18,6 +19,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
+import { PaginationDto, PaginatedResponseDto } from '../common/dto/pagination.dto';
 
 @ApiTags('Clients')
 @ApiBearerAuth('JWT-auth')
@@ -45,14 +47,27 @@ export class ClientsController {
 
   @Get()
   @Version('1')
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiOperation({ 
     summary: 'Get all clients', 
-    description: 'Get all clients. Admins see all, Employees see only assigned clients.' 
+    description: 'Get all clients with pagination. Admins see all, Employees see only assigned clients.' 
   })
-  @ApiResponse({ status: 200, description: 'List of clients', type: [ClientResponseDto] })
-  async findAll(@GetUser() user: any): Promise<ClientResponseDto[]> {
-    const clients = await this.clientsService.findAll(user.id, user.roleNames || []);
-    return clients.map(client => this.mapToResponseDto(client));
+  @ApiResponse({ status: 200, description: 'Paginated list of clients' })
+  async findAll(
+    @Query() pagination: PaginationDto,
+    @GetUser() user: any
+  ): Promise<PaginatedResponseDto<ClientResponseDto>> {
+    const result = await this.clientsService.findAll(
+      user.id,
+      user.roleNames || [],
+      pagination.page,
+      pagination.limit
+    );
+    return {
+      ...result,
+      data: result.data.map(client => this.mapToResponseDto(client))
+    };
   }
 
   @Get(':id')

@@ -22,6 +22,9 @@ export class User {
 
   @Prop()
   lastLoginAt: Date;
+
+  @Prop()
+  refreshToken: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

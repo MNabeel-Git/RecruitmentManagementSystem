@@ -121,13 +121,32 @@ Once the application is running, you can access:
 - Candidate Data Schema (dynamic fields array)
 - isActive flag
 
+#### Job Vacancy
+- Name
+- Description
+- Client (reference to Client)
+- Job Template (reference to JobTemplate)
+- Candidate Data Schema (snapshot from template, editable)
+- Assigned Agencies (array of references to Agency)
+- Created By (reference to User)
+- isActive flag
+
+#### Candidate
+- Job Vacancy (reference to JobVacancy)
+- Created By (reference to User - Agency user)
+- Data (dynamic object following job vacancy schema)
+- isActive flag
+
 ### Security Features
 
 - **Password Hashing**: Bcrypt with 10 salt rounds
-- **JWT Authentication**: Secure token-based authentication
+- **JWT Authentication**: Secure token-based authentication with access and refresh tokens
+- **JWT Expiration & Refresh**: Access tokens expire (configurable), refresh tokens for token renewal
 - **Role-Based Access Control**: Dynamic permissions stored in database
 - **Input Validation**: DTO-based validation with class-validator
 - **Password Exclusion**: Passwords are automatically excluded from JSON responses
+- **IDOR Prevention**: Object-level authorization checks prevent unauthorized access
+- **Route-level Security**: Role & permission checks at route level using guards and decorators
 
 ### MongoDB Indexing
 
@@ -137,6 +156,16 @@ All schemas include proper indexes for optimal query performance:
 - Permission: name (unique), isActive
 - Client: assignedEmployee, isActive, name
 - Job Template: client, isActive, name
+- Job Vacancy: client, jobTemplate, assignedAgencies, createdBy, isActive, name
+- Candidate: jobVacancy, createdBy, isActive, (jobVacancy, createdBy)
+
+### Performance Optimizations
+
+- **Pagination**: All listing endpoints support pagination (page, limit query parameters)
+- **Lean Queries**: Read operations use `.lean()` for better performance
+- **Proper Projections**: Only necessary fields are populated and selected
+- **Parallel Queries**: Count and data queries run in parallel using Promise.all
+- **Indexed Fields**: All frequently queried fields are properly indexed
 
 ## Development
 

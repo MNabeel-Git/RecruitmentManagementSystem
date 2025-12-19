@@ -16,16 +16,31 @@ export class ClientsService {
     return client.save();
   }
 
-  async findAll(userId: string, userRoleNames: string[]): Promise<ClientDocument[]> {
+  async findAll(userId: string, userRoleNames: string[], page: number = 1, limit: number = 10): Promise<{ data: ClientDocument[]; total: number; page: number; limit: number; totalPages: number }> {
     const isAdmin = userRoleNames.includes('Admin');
+    const query = isAdmin 
+      ? { isActive: true }
+      : { assignedEmployee: userId, isActive: true };
     
-    if (isAdmin) {
-      return this.clientModel.find({ isActive: true }).populate('assignedEmployee', 'fullName email').exec();
-    }
+    const skip = (page - 1) * limit;
     
-    return this.clientModel.find({ assignedEmployee: userId, isActive: true })
-      .populate('assignedEmployee', 'fullName email')
-      .exec();
+    const [data, total] = await Promise.all([
+      this.clientModel.find(query)
+        .populate('assignedEmployee', 'fullName email')
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.clientModel.countDocuments(query).exec()
+    ]);
+    
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async findOne(id: string, userId: string, userRoleNames: string[]): Promise<ClientDocument> {
@@ -44,7 +59,7 @@ export class ClientsService {
   }
 
   async update(id: string, updateClientDto: UpdateClientDto, userId: string, userRoleNames: string[]): Promise<ClientDocument> {
-    const client = await this.clientModel.findById(id).exec();
+    const client = await this.clientModel.findById(id).lean().exec();
     
     if (!client) {
       throw new NotFoundException('Client not found');
@@ -55,12 +70,21 @@ export class ClientsService {
       throw new ForbiddenException('Only admins can update clients');
     }
 
-    Object.assign(client, updateClientDto);
-    return client.save();
+    const updatedClient = await this.clientModel.findByIdAndUpdate(
+      id,
+      updateClientDto,
+      { new: true }
+    ).populate('assignedEmployee', 'fullName email').lean().exec();
+
+    if (!updatedClient) {
+      throw new NotFoundException('Client not found');
+    }
+
+    return updatedClient as any;
   }
 
   async remove(id: string, userId: string, userRoleNames: string[]): Promise<void> {
-    const client = await this.clientModel.findById(id).exec();
+    const client = await this.clientModel.findById(id).lean().exec();
     
     if (!client) {
       throw new NotFoundException('Client not found');
