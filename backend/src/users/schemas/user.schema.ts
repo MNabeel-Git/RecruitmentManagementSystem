@@ -5,14 +5,17 @@ export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ required: true, index: true })
   email: string;
 
   @Prop({ required: true })
-  password: string;
+  password?: string;
 
   @Prop({ required: true })
   fullName: string;
+
+  @Prop({ type: Types.ObjectId, ref: 'Tenant', index: true })
+  tenantId: Types.ObjectId;
 
   @Prop({ type: [{ type: Types.ObjectId, ref: 'Role' }], default: [] })
   roles: Types.ObjectId[];
@@ -29,20 +32,25 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ email: 1, tenantId: 1 }, { unique: true });
 UserSchema.index({ isActive: 1 });
 UserSchema.index({ roles: 1 });
+UserSchema.index({ tenantId: 1 });
 
 UserSchema.set('toJSON', {
   transform: function (doc, ret) {
-    delete ret.password;
+    if (ret.password) {
+      delete ret.password;
+    }
     return ret;
   }
 });
 
 UserSchema.set('toObject', {
   transform: function (doc, ret) {
-    delete ret.password;
+    if (ret.password) {
+      delete ret.password;
+    }
     return ret;
   }
 });

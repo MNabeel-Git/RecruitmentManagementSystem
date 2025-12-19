@@ -18,6 +18,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { PaginationDto, PaginatedResponseDto } from '../common/dto/pagination.dto';
+import { Audit } from '../audit/decorators/audit.decorator';
+import { AuditAction, AuditResource } from '../audit/schemas/audit-log.schema';
 
 @ApiTags('Job Templates')
 @ApiBearerAuth('JWT-auth')
@@ -32,6 +34,7 @@ export class JobTemplatesController {
   @Post()
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.CREATE, AuditResource.JOB_TEMPLATE)
   @ApiOperation({ summary: 'Create job template', description: 'Create a new job template. Admin only. Templates are immutable once created.' })
   @ApiResponse({ status: 201, description: 'Job template created successfully', type: JobTemplateResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
@@ -39,7 +42,7 @@ export class JobTemplatesController {
     @Body() createJobTemplateDto: CreateJobTemplateDto,
     @GetUser() user: any
   ): Promise<JobTemplateResponseDto> {
-    const template = await this.jobTemplatesService.create(createJobTemplateDto, user.id, user.roleNames || []);
+    const template = await this.jobTemplatesService.create(createJobTemplateDto, user.id, user.roleNames || [], user.tenantId);
     return this.mapToResponseDto(template);
   }
 
@@ -62,6 +65,7 @@ export class JobTemplatesController {
       clientId,
       user?.id,
       user?.roleNames || [],
+      user?.tenantId,
       pagination?.page,
       pagination?.limit
     );
@@ -104,13 +108,14 @@ export class JobTemplatesController {
     @Param('id') id: string,
     @GetUser() user?: any
   ): Promise<JobTemplateResponseDto> {
-    const template = await this.jobTemplatesService.findOne(id, user?.id, user?.roleNames || []);
+    const template = await this.jobTemplatesService.findOne(id, user?.id, user?.roleNames || [], user?.tenantId);
     return this.mapToResponseDto(template);
   }
 
   @Delete(':id')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.DELETE, AuditResource.JOB_TEMPLATE)
   @ApiOperation({ summary: 'Delete job template', description: 'Soft delete a job template. Admin only.' })
   @ApiResponse({ status: 200, description: 'Job template deleted successfully' })
   @ApiResponse({ status: 404, description: 'Job template not found' })
@@ -119,7 +124,7 @@ export class JobTemplatesController {
     @Param('id') id: string,
     @GetUser() user: any
   ): Promise<{ message: string }> {
-    await this.jobTemplatesService.remove(id, user.id, user.roleNames || []);
+    await this.jobTemplatesService.remove(id, user.id, user.roleNames || [], user.tenantId);
     return { message: 'Job template deleted successfully' };
   }
 

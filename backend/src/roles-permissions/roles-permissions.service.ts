@@ -14,36 +14,54 @@ export class RolesPermissionsService {
     @InjectModel(Permission.name) private permissionModel: Model<PermissionDocument>
   ) {}
 
-  async createRole(createRoleDto: CreateRoleDto): Promise<RoleDocument> {
-    const existingRole = await this.roleModel.findOne({ name: createRoleDto.name }).exec();
+  async createRole(createRoleDto: CreateRoleDto, tenantId?: string): Promise<RoleDocument> {
+    const query: any = { name: createRoleDto.name };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const existingRole = await this.roleModel.findOne(query).exec();
     if (existingRole) {
       throw new ConflictException('Role with this name already exists');
     }
 
-    const role = new this.roleModel(createRoleDto);
+    const roleData = tenantId ? { ...createRoleDto, tenantId } : createRoleDto;
+    const role = new this.roleModel(roleData);
     return role.save();
   }
 
-  async findAllRoles(): Promise<RoleDocument[]> {
-    return this.roleModel.find({ isActive: true }).populate('permissions').lean().exec();
+  async findAllRoles(tenantId?: string): Promise<any[]> {
+    const query: any = { isActive: true };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    return this.roleModel.find(query).populate('permissions').lean().exec();
   }
 
-  async findRoleById(id: string): Promise<RoleDocument | null> {
+  async findRoleById(id: string): Promise<any> {
     return this.roleModel.findById(id).populate('permissions').lean().exec();
   }
 
-  async findRoleByName(name: string): Promise<RoleDocument | null> {
-    return this.roleModel.findOne({ name, isActive: true }).populate('permissions').lean().exec();
+  async findRoleByName(name: string, tenantId?: string): Promise<any> {
+    const query: any = { name, isActive: true };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    return this.roleModel.findOne(query).populate('permissions').lean().exec();
   }
 
-  async updateRole(id: string, updateRoleDto: UpdateRoleDto): Promise<RoleDocument> {
+  async updateRole(id: string, updateRoleDto: UpdateRoleDto, tenantId?: string): Promise<any> {
     const role = await this.roleModel.findById(id).exec();
     if (!role) {
       throw new NotFoundException('Role not found');
     }
 
-    if (updateRoleDto.name && updateRoleDto.name !== role.name) {
-      const existingRole = await this.roleModel.findOne({ name: updateRoleDto.name }).exec();
+    const updateData: any = updateRoleDto;
+    if ((updateData as any).name && (updateData as any).name !== role.name) {
+      const query: any = { name: (updateData as any).name };
+      if (tenantId) {
+        query.tenantId = tenantId;
+      }
+      const existingRole = await this.roleModel.findOne(query).exec();
       if (existingRole) {
         throw new ConflictException('Role with this name already exists');
       }
@@ -51,7 +69,7 @@ export class RolesPermissionsService {
 
     const updatedRole = await this.roleModel.findByIdAndUpdate(
       id,
-      updateRoleDto,
+      updateData,
       { new: true }
     ).populate('permissions').lean().exec();
 
@@ -59,7 +77,7 @@ export class RolesPermissionsService {
       throw new NotFoundException('Role not found');
     }
 
-    return updatedRole as any;
+    return updatedRole;
   }
 
   async removeRole(id: string): Promise<void> {
@@ -71,36 +89,54 @@ export class RolesPermissionsService {
     await this.roleModel.findByIdAndUpdate(id, { isActive: false }).exec();
   }
 
-  async createPermission(createPermissionDto: CreatePermissionDto): Promise<PermissionDocument> {
-    const existingPermission = await this.permissionModel.findOne({ name: createPermissionDto.name }).exec();
+  async createPermission(createPermissionDto: CreatePermissionDto, tenantId?: string): Promise<PermissionDocument> {
+    const query: any = { name: createPermissionDto.name };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const existingPermission = await this.permissionModel.findOne(query).exec();
     if (existingPermission) {
       throw new ConflictException('Permission with this name already exists');
     }
 
-    const permission = await this.permissionModel.create(createPermissionDto);
+    const permissionData = tenantId ? { ...createPermissionDto, tenantId } : createPermissionDto;
+    const permission = await this.permissionModel.create(permissionData);
     return permission.toObject();
   }
 
-  async findAllPermissions(): Promise<PermissionDocument[]> {
-    return this.permissionModel.find({ isActive: true }).lean().exec();
+  async findAllPermissions(tenantId?: string): Promise<any[]> {
+    const query: any = { isActive: true };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    return this.permissionModel.find(query).lean().exec();
   }
 
-  async findPermissionById(id: string): Promise<PermissionDocument | null> {
+  async findPermissionById(id: string): Promise<any> {
     return this.permissionModel.findById(id).lean().exec();
   }
 
-  async findPermissionByName(name: string): Promise<PermissionDocument | null> {
-    return this.permissionModel.findOne({ name, isActive: true }).lean().exec();
+  async findPermissionByName(name: string, tenantId?: string): Promise<any> {
+    const query: any = { name, isActive: true };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    return this.permissionModel.findOne(query).lean().exec();
   }
 
-  async updatePermission(id: string, updateDto: Partial<CreatePermissionDto>): Promise<PermissionDocument> {
+  async updatePermission(id: string, updateDto: Partial<CreatePermissionDto>, tenantId?: string): Promise<any> {
     const permission = await this.permissionModel.findById(id).exec();
     if (!permission) {
       throw new NotFoundException('Permission not found');
     }
 
-    if (updateDto.name && updateDto.name !== permission.name) {
-      const existingPermission = await this.permissionModel.findOne({ name: updateDto.name }).exec();
+    const updateData: any = updateDto;
+    if (updateData.name && updateData.name !== permission.name) {
+      const query: any = { name: updateData.name };
+      if (tenantId) {
+        query.tenantId = tenantId;
+      }
+      const existingPermission = await this.permissionModel.findOne(query).exec();
       if (existingPermission) {
         throw new ConflictException('Permission with this name already exists');
       }
@@ -108,7 +144,7 @@ export class RolesPermissionsService {
 
     const updatedPermission = await this.permissionModel.findByIdAndUpdate(
       id,
-      updateDto,
+      updateData,
       { new: true }
     ).lean().exec();
 
@@ -116,7 +152,7 @@ export class RolesPermissionsService {
       throw new NotFoundException('Permission not found');
     }
 
-    return updatedPermission as any;
+    return updatedPermission;
   }
 
   async removePermission(id: string): Promise<void> {

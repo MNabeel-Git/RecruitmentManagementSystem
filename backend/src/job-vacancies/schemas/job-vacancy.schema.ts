@@ -12,6 +12,9 @@ export class JobVacancy {
   @Prop()
   description: string;
 
+  @Prop({ type: Types.ObjectId, ref: 'Tenant', required: true, index: true })
+  tenantId: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'Client', required: true, index: true })
   client: Types.ObjectId;
 
@@ -50,4 +53,5 @@ JobVacancySchema.index({ assignedAgencies: 1 });
 JobVacancySchema.index({ createdBy: 1 });
 JobVacancySchema.index({ isActive: 1 });
 JobVacancySchema.index({ name: 1 });
+JobVacancySchema.index({ tenantId: 1 });
 

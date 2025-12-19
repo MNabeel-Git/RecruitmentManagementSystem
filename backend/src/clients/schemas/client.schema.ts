@@ -20,6 +20,9 @@ export class Client {
   @Prop()
   address: string;
 
+  @Prop({ type: Types.ObjectId, ref: 'Tenant', required: true, index: true })
+  tenantId: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   assignedEmployee: Types.ObjectId;
 
@@ -32,4 +35,5 @@ export const ClientSchema = SchemaFactory.createForClass(Client);
 ClientSchema.index({ assignedEmployee: 1 });
 ClientSchema.index({ isActive: 1 });
 ClientSchema.index({ name: 1 });
+ClientSchema.index({ tenantId: 1 });
 

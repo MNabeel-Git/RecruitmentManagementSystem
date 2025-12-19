@@ -31,7 +31,8 @@ export class AuthService {
     const payload = {
       sub: user._id.toString(),
       email: user.email,
-      roles: roleIds
+      roles: roleIds,
+      tenantId: user.tenantId ? user.tenantId.toString() : null
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -74,7 +75,8 @@ export class AuthService {
       const newPayload = {
         sub: user._id.toString(),
         email: user.email,
-        roles: roleIds
+        roles: roleIds,
+        tenantId: user.tenantId ? user.tenantId.toString() : null
       };
 
       const accessToken = this.jwtService.sign(newPayload, {

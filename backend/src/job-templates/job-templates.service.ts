@@ -12,18 +12,23 @@ export class JobTemplatesService {
     @InjectModel(Client.name) private clientModel: Model<any>
   ) {}
 
-  async create(createJobTemplateDto: CreateJobTemplateDto, userId: string, userRoleNames: string[]): Promise<JobTemplateDocument> {
+  async create(createJobTemplateDto: CreateJobTemplateDto, userId: string, userRoleNames: string[], tenantId?: string): Promise<JobTemplateDocument> {
     const isAdmin = userRoleNames.includes('Admin');
     if (!isAdmin) {
       throw new ForbiddenException('Only admins can create job templates');
     }
 
-    const template = new this.jobTemplateModel(createJobTemplateDto);
+    const templateData = tenantId ? { ...createJobTemplateDto, tenantId } : createJobTemplateDto;
+    const template = new this.jobTemplateModel(templateData);
     return template.save();
   }
 
-  async findAll(clientId?: string, userId?: string, userRoleNames?: string[], page: number = 1, limit: number = 10): Promise<{ data: JobTemplateDocument[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(clientId?: string, userId?: string, userRoleNames?: string[], tenantId?: string, page: number = 1, limit: number = 10): Promise<{ data: any[]; total: number; page: number; limit: number; totalPages: number }> {
     const query: any = { isActive: true };
+
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
 
     if (clientId) {
       query.client = clientId;
@@ -58,8 +63,12 @@ export class JobTemplatesService {
     };
   }
 
-  async findOne(id: string, userId?: string, userRoleNames?: string[]): Promise<JobTemplateDocument> {
-    const template = await this.jobTemplateModel.findById(id).populate('client', 'name').exec();
+  async findOne(id: string, userId?: string, userRoleNames?: string[], tenantId?: string): Promise<JobTemplateDocument> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const template = await this.jobTemplateModel.findOne(query).populate('client', 'name').exec();
 
     if (!template) {
       throw new NotFoundException('Job template not found');
@@ -75,7 +84,7 @@ export class JobTemplatesService {
     return template;
   }
 
-  async findByClient(clientId: string, userId?: string, userRoleNames?: string[]): Promise<JobTemplateDocument[]> {
+  async findByClient(clientId: string, userId?: string, userRoleNames?: string[]): Promise<any[]> {
     if (userRoleNames && !userRoleNames.includes('Admin') && userId) {
       const hasAccess = await this.checkEmployeeAccess(clientId, userId);
       if (!hasAccess) {
@@ -86,8 +95,12 @@ export class JobTemplatesService {
     return this.jobTemplateModel.find({ client: clientId, isActive: true }).populate('client', 'name').lean().exec();
   }
 
-  async remove(id: string, userId: string, userRoleNames: string[]): Promise<void> {
-    const template = await this.jobTemplateModel.findById(id).lean().exec();
+  async remove(id: string, userId: string, userRoleNames: string[], tenantId?: string): Promise<void> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const template = await this.jobTemplateModel.findOne(query).lean().exec();
 
     if (!template) {
       throw new NotFoundException('Job template not found');

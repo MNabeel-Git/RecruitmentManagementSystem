@@ -14,7 +14,7 @@ export class CandidatesService {
     @InjectModel(JobVacancy.name) private jobVacancyModel: Model<any>
   ) {}
 
-  async create(createCandidateDto: CreateCandidateDto, userId: string, userRoleNames: string[]): Promise<CandidateDocument> {
+  async create(createCandidateDto: CreateCandidateDto, userId: string, userRoleNames: string[], tenantId?: string): Promise<CandidateDocument> {
     const isAgency = userRoleNames.includes('Agency');
     if (!isAgency) {
       throw new ForbiddenException('Only agency users can create candidates');
@@ -32,17 +32,26 @@ export class CandidatesService {
 
     this.validateCandidateData(createCandidateDto.data, jobVacancy.candidateDataSchema);
 
-    const candidate = new this.candidateModel({
+    const candidateData: any = {
       jobVacancy: createCandidateDto.jobVacancy,
       data: createCandidateDto.data,
       createdBy: userId
-    });
+    };
+    if (tenantId) {
+      candidateData.tenantId = tenantId;
+    }
+
+    const candidate = new this.candidateModel(candidateData);
 
     return candidate.save();
   }
 
-  async findAll(jobVacancyId?: string, userId?: string, userRoleNames?: string[], page: number = 1, limit: number = 10): Promise<{ data: CandidateDocument[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(jobVacancyId?: string, userId?: string, userRoleNames?: string[], tenantId?: string, page: number = 1, limit: number = 10): Promise<{ data: any[]; total: number; page: number; limit: number; totalPages: number }> {
     const query: any = { isActive: true };
+
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
 
     if (jobVacancyId) {
       query.jobVacancy = jobVacancyId;
@@ -61,8 +70,8 @@ export class CandidatesService {
       if (userRoleNames.includes('Employee') && !userRoleNames.includes('Admin')) {
         const { Model } = await import('mongoose');
         const clientModel = this.candidateModel.db.models.Client || this.candidateModel.db.model('Client');
-        const client = await clientModel.findById(jobVacancy.client).lean().exec();
-        if (!client || client.assignedEmployee.toString() !== userId) {
+        const client = await clientModel.findById((jobVacancy as any).client).lean().exec();
+        if (!client || !(client as any).assignedEmployee || (client as any).assignedEmployee.toString() !== userId) {
           return { data: [], total: 0, page, limit, totalPages: 0 };
         }
       }
@@ -90,8 +99,12 @@ export class CandidatesService {
     };
   }
 
-  async findOne(id: string, userId: string, userRoleNames: string[]): Promise<CandidateDocument> {
-    const candidate = await this.candidateModel.findById(id)
+  async findOne(id: string, userId: string, userRoleNames: string[], tenantId?: string): Promise<CandidateDocument> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const candidate = await this.candidateModel.findOne(query)
       .populate('jobVacancy')
       .populate('createdBy', 'fullName email')
       .exec();
@@ -123,8 +136,12 @@ export class CandidatesService {
     return candidate;
   }
 
-  async update(id: string, updateCandidateDto: UpdateCandidateDto, userId: string, userRoleNames: string[]): Promise<CandidateDocument> {
-    const candidate = await this.candidateModel.findById(id).lean().exec();
+  async update(id: string, updateCandidateDto: UpdateCandidateDto, userId: string, userRoleNames: string[], tenantId?: string): Promise<any> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const candidate = await this.candidateModel.findOne(query).lean().exec();
 
     if (!candidate) {
       throw new NotFoundException('Candidate not found');
@@ -145,7 +162,7 @@ export class CandidatesService {
     }
 
     if (updateCandidateDto.data) {
-      this.validateCandidateData(updateCandidateDto.data, jobVacancy.candidateDataSchema);
+      this.validateCandidateData(updateCandidateDto.data, (jobVacancy as any).candidateDataSchema);
     }
 
     const updatedCandidate = await this.candidateModel.findByIdAndUpdate(
@@ -158,11 +175,15 @@ export class CandidatesService {
       throw new NotFoundException('Candidate not found');
     }
 
-    return updatedCandidate as any;
+    return updatedCandidate;
   }
 
-  async remove(id: string, userId: string, userRoleNames: string[]): Promise<void> {
-    const candidate = await this.candidateModel.findById(id).lean().exec();
+  async remove(id: string, userId: string, userRoleNames: string[], tenantId?: string): Promise<void> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const candidate = await this.candidateModel.findOne(query).lean().exec();
 
     if (!candidate) {
       throw new NotFoundException('Candidate not found');

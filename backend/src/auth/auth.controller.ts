@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { Audit } from '../audit/decorators/audit.decorator';
+import { AuditAction, AuditResource } from '../audit/schemas/audit-log.schema';
 
 @ApiTags('Authentication')
 @Controller({
@@ -16,6 +18,7 @@ export class AuthController {
   @Post('login')
   @Version('1')
   @HttpCode(HttpStatus.OK)
+  @Audit(AuditAction.LOGIN, AuditResource.USER)
   @ApiOperation({ summary: 'User login', description: 'Authenticate user with email and password' })
   @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })

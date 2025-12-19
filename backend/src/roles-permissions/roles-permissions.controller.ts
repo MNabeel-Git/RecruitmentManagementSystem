@@ -20,6 +20,8 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
+import { Audit } from '../audit/decorators/audit.decorator';
+import { AuditAction, AuditResource } from '../audit/schemas/audit-log.schema';
 
 @ApiTags('Roles & Permissions')
 @ApiBearerAuth('JWT-auth')
@@ -34,11 +36,12 @@ export class RolesPermissionsController {
   @Post('roles')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.CREATE, AuditResource.ROLE)
   @ApiOperation({ summary: 'Create role', description: 'Create a new role. Admin only.' })
   @ApiResponse({ status: 201, description: 'Role created successfully', type: RoleResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
-  async createRole(@Body() createRoleDto: CreateRoleDto): Promise<RoleResponseDto> {
-    const role = await this.rolesPermissionsService.createRole(createRoleDto);
+  async createRole(@Body() createRoleDto: CreateRoleDto, @GetUser() user?: any): Promise<RoleResponseDto> {
+    const role = await this.rolesPermissionsService.createRole(createRoleDto, user?.tenantId);
     return this.mapRoleToResponse(role);
   }
 
@@ -47,8 +50,8 @@ export class RolesPermissionsController {
   @Roles('Admin')
   @ApiOperation({ summary: 'Get all roles', description: 'Get all active roles. Admin only.' })
   @ApiResponse({ status: 200, description: 'List of roles', type: [RoleResponseDto] })
-  async findAllRoles(): Promise<RoleResponseDto[]> {
-    const roles = await this.rolesPermissionsService.findAllRoles();
+  async findAllRoles(@GetUser() user?: any): Promise<RoleResponseDto[]> {
+    const roles = await this.rolesPermissionsService.findAllRoles(user?.tenantId);
     return roles.map(role => this.mapRoleToResponse(role));
   }
 
@@ -69,20 +72,23 @@ export class RolesPermissionsController {
   @Patch('roles/:id')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.UPDATE, AuditResource.ROLE)
   @ApiOperation({ summary: 'Update role', description: 'Update a role. Admin only.' })
   @ApiResponse({ status: 200, description: 'Role updated successfully', type: RoleResponseDto })
   @ApiResponse({ status: 404, description: 'Role not found' })
   async updateRole(
     @Param('id') id: string,
-    @Body() updateRoleDto: UpdateRoleDto
+    @Body() updateRoleDto: UpdateRoleDto,
+    @GetUser() user?: any
   ): Promise<RoleResponseDto> {
-    const role = await this.rolesPermissionsService.updateRole(id, updateRoleDto);
+    const role = await this.rolesPermissionsService.updateRole(id, updateRoleDto, user?.tenantId);
     return this.mapRoleToResponse(role);
   }
 
   @Delete('roles/:id')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.DELETE, AuditResource.ROLE)
   @ApiOperation({ summary: 'Delete role', description: 'Soft delete a role. Admin only.' })
   @ApiResponse({ status: 200, description: 'Role deleted successfully' })
   @ApiResponse({ status: 404, description: 'Role not found' })
@@ -94,11 +100,12 @@ export class RolesPermissionsController {
   @Post('permissions')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.CREATE, AuditResource.PERMISSION)
   @ApiOperation({ summary: 'Create permission', description: 'Create a new permission. Admin only.' })
   @ApiResponse({ status: 201, description: 'Permission created successfully', type: PermissionResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
-  async createPermission(@Body() createPermissionDto: CreatePermissionDto): Promise<PermissionResponseDto> {
-    const permission = await this.rolesPermissionsService.createPermission(createPermissionDto);
+  async createPermission(@Body() createPermissionDto: CreatePermissionDto, @GetUser() user?: any): Promise<PermissionResponseDto> {
+    const permission = await this.rolesPermissionsService.createPermission(createPermissionDto, user?.tenantId);
     return this.mapPermissionToResponse(permission);
   }
 
@@ -107,8 +114,8 @@ export class RolesPermissionsController {
   @Roles('Admin')
   @ApiOperation({ summary: 'Get all permissions', description: 'Get all active permissions. Admin only.' })
   @ApiResponse({ status: 200, description: 'List of permissions', type: [PermissionResponseDto] })
-  async findAllPermissions(): Promise<PermissionResponseDto[]> {
-    const permissions = await this.rolesPermissionsService.findAllPermissions();
+  async findAllPermissions(@GetUser() user?: any): Promise<PermissionResponseDto[]> {
+    const permissions = await this.rolesPermissionsService.findAllPermissions(user?.tenantId);
     return permissions.map(permission => this.mapPermissionToResponse(permission));
   }
 
@@ -129,20 +136,23 @@ export class RolesPermissionsController {
   @Patch('permissions/:id')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.UPDATE, AuditResource.PERMISSION)
   @ApiOperation({ summary: 'Update permission', description: 'Update a permission. Admin only.' })
   @ApiResponse({ status: 200, description: 'Permission updated successfully', type: PermissionResponseDto })
   @ApiResponse({ status: 404, description: 'Permission not found' })
   async updatePermission(
     @Param('id') id: string,
-    @Body() updateDto: Partial<CreatePermissionDto>
+    @Body() updateDto: Partial<CreatePermissionDto>,
+    @GetUser() user?: any
   ): Promise<PermissionResponseDto> {
-    const permission = await this.rolesPermissionsService.updatePermission(id, updateDto);
+    const permission = await this.rolesPermissionsService.updatePermission(id, updateDto, user?.tenantId);
     return this.mapPermissionToResponse(permission);
   }
 
   @Delete('permissions/:id')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.DELETE, AuditResource.PERMISSION)
   @ApiOperation({ summary: 'Delete permission', description: 'Soft delete a permission. Admin only.' })
   @ApiResponse({ status: 200, description: 'Permission deleted successfully' })
   @ApiResponse({ status: 404, description: 'Permission not found' })

@@ -9,7 +9,8 @@ export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email, isActive: true }).exec();
+    const user = await this.userModel.findOne({ email, isActive: true }).exec();
+    return user;
   }
 
   async findById(id: string): Promise<UserDocument | null> {
@@ -18,7 +19,7 @@ export class UsersService {
 
   async validateUser(email: string, password: string): Promise<UserDocument | null> {
     const user = await this.findByEmail(email);
-    if (!user) {
+    if (!user || !user.password) {
       return null;
     }
 

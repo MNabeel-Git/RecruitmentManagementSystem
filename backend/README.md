@@ -15,23 +15,50 @@ A secure, scalable backend API built with NestJS, MongoDB, and JWT authenticatio
 - MongoDB (v5 or higher)
 - npm or yarn
 
-## Setup Instructions
+## Quick Start Guide
 
-### 1. Install Dependencies
+### Option 1: Using Docker (Recommended)
+
+The easiest way to run the project is using Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+This will:
+- Start MongoDB container
+- Build and start the application
+- Make API available at `http://localhost:3000`
+
+**After starting with Docker, run the seed script:**
+```bash
+npm run seed
+```
+
+To stop:
+```bash
+docker-compose down
+```
+
+### Option 2: Local Development Setup
+
+#### Step 1: Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Environment Configuration
+#### Step 2: Setup Environment Variables
 
-Copy the `env.example` file to `.env` and configure the following variables:
+Copy the example environment file:
 
 ```bash
+# On Windows
+copy env.example .env
+
+# On Linux/Mac
 cp env.example .env
 ```
-
-### 3. Environment Variables
 
 Edit `.env` file with your configuration:
 
@@ -43,29 +70,113 @@ JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=3600s
 JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-this-in-production
 JWT_REFRESH_EXPIRES_IN=7d
+THROTTLE_TTL=60
+THROTTLE_LIMIT=100
 ```
 
 **Important**: 
-- Replace `JWT_SECRET` and `JWT_REFRESH_SECRET` with strong, random strings in production
-- Update `MONGODB_URI` if your MongoDB instance is not running on localhost:27017
-- Ensure MongoDB is running before starting the application
+- Replace `JWT_SECRET` and `JWT_REFRESH_SECRET` with strong, random strings
+- Ensure MongoDB is installed and running on your system
+- Update `MONGODB_URI` if MongoDB is running on a different host/port
 
-### 4. Run the Application
+#### Step 3: Start MongoDB
 
-**Development mode:**
+Make sure MongoDB is running:
+
 ```bash
-npm run start:dev
+# Check if MongoDB is running
+mongosh --eval "db.version()"
+
+# Or start MongoDB service
+# Windows: net start MongoDB
+# Linux: sudo systemctl start mongod
+# Mac: brew services start mongodb-community
 ```
+
+#### Step 4: Seed Database (REQUIRED - Run This First!)
+
+**⚠️ IMPORTANT**: You must run the seed script before starting the application to create initial users and data. Without this, you won't be able to login.
+
+Populate the database with sample data:
+
+```bash
+npm run seed
+```
+
+This creates:
+- Sample users (Admin, Employee, Agency) with default credentials
+- Sample clients, job templates, job vacancies, and candidates
+- Default roles and permissions
+
+**Note**: The seed script is idempotent - it will skip creating data that already exists.
+
+#### Step 5: Run the Application
+
+**Development mode (with hot reload - Recommended for first run):**
+```bash
+npm run dev
+```
+This command automatically compiles TypeScript and watches for changes. No build step required.
 
 **Production mode:**
 ```bash
+# First, build the project
 npm run build
+
+# Then start the production server
 npm run start:prod
+# OR simply
+npm run start
 ```
+
+**Note**: The `npm run start` command requires the project to be built first. For development, always use `npm run dev`.
 
 The API will be available at `http://localhost:3000`
 
-### 5. API Documentation
+## Getting Started - First Login
+
+**Before you can use the API, you must run the seed script** (`npm run seed`) to create initial users.
+
+### Test Credentials
+
+After running the seed script, use these credentials to login:
+
+- **Admin User**: 
+  - Email: `admin@rms.com`
+  - Password: `password123`
+  - Access: Full system access
+
+- **Employee User**: 
+  - Email: `employee@rms.com`
+  - Password: `password123`
+  - Access: Manage clients and job vacancies
+
+- **Agency User**: 
+  - Email: `agency@rms.com`
+  - Password: `password123`
+  - Access: Manage candidates for assigned jobs
+
+### First API Call
+
+1. **Login** to get your access token:
+   ```
+   POST http://localhost:3000/api/v1/auth/login
+   Content-Type: application/json
+   
+   {
+     "email": "admin@rms.com",
+     "password": "password123"
+   }
+   ```
+
+2. **Copy the `accessToken`** from the response
+
+3. **Use the token** in subsequent API calls:
+   ```
+   Authorization: Bearer <your-access-token>
+   ```
+
+## API Documentation
 
 Once the application is running, you can access:
 
@@ -181,3 +292,14 @@ npm run lint
 npm test
 npm run test:e2e
 ```
+
+## Available Commands
+
+- `npm run dev` - Start in development mode (with hot reload)
+- `npm run build` - Build for production
+- `npm run start` - Start in production mode (requires build first)
+- `npm run start:prod` - Start in production mode (requires build first)
+- `npm run seed` - Populate database with sample data
+- `npm run lint` - Run code linting
+- `npm test` - Run tests
+- `npm run test:e2e` - Run end-to-end tests

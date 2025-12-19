@@ -11,16 +11,21 @@ export class ClientsService {
     @InjectModel(Client.name) private clientModel: Model<ClientDocument>
   ) {}
 
-  async create(createClientDto: CreateClientDto, userId: string): Promise<ClientDocument> {
-    const client = new this.clientModel(createClientDto);
+  async create(createClientDto: CreateClientDto, userId: string, tenantId?: string): Promise<ClientDocument> {
+    const clientData = tenantId ? { ...createClientDto, tenantId } : createClientDto;
+    const client = new this.clientModel(clientData);
     return client.save();
   }
 
-  async findAll(userId: string, userRoleNames: string[], page: number = 1, limit: number = 10): Promise<{ data: ClientDocument[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(userId: string, userRoleNames: string[], tenantId?: string, page: number = 1, limit: number = 10): Promise<{ data: any[]; total: number; page: number; limit: number; totalPages: number }> {
     const isAdmin = userRoleNames.includes('Admin');
-    const query = isAdmin 
+    const query: any = isAdmin 
       ? { isActive: true }
       : { assignedEmployee: userId, isActive: true };
+    
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
     
     const skip = (page - 1) * limit;
     
@@ -43,8 +48,12 @@ export class ClientsService {
     };
   }
 
-  async findOne(id: string, userId: string, userRoleNames: string[]): Promise<ClientDocument> {
-    const client = await this.clientModel.findById(id).populate('assignedEmployee', 'fullName email').exec();
+  async findOne(id: string, userId: string, userRoleNames: string[], tenantId?: string): Promise<ClientDocument> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const client = await this.clientModel.findOne(query).populate('assignedEmployee', 'fullName email').exec();
     
     if (!client) {
       throw new NotFoundException('Client not found');
@@ -58,8 +67,12 @@ export class ClientsService {
     return client;
   }
 
-  async update(id: string, updateClientDto: UpdateClientDto, userId: string, userRoleNames: string[]): Promise<ClientDocument> {
-    const client = await this.clientModel.findById(id).lean().exec();
+  async update(id: string, updateClientDto: UpdateClientDto, userId: string, userRoleNames: string[], tenantId?: string): Promise<any> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const client = await this.clientModel.findOne(query).lean().exec();
     
     if (!client) {
       throw new NotFoundException('Client not found');
@@ -80,11 +93,15 @@ export class ClientsService {
       throw new NotFoundException('Client not found');
     }
 
-    return updatedClient as any;
+    return updatedClient;
   }
 
-  async remove(id: string, userId: string, userRoleNames: string[]): Promise<void> {
-    const client = await this.clientModel.findById(id).lean().exec();
+  async remove(id: string, userId: string, userRoleNames: string[], tenantId?: string): Promise<void> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const client = await this.clientModel.findOne(query).lean().exec();
     
     if (!client) {
       throw new NotFoundException('Client not found');

@@ -15,7 +15,7 @@ export class JobVacanciesService {
     @InjectModel(Client.name) private clientModel: Model<any>
   ) {}
 
-  async create(createJobVacancyDto: CreateJobVacancyDto, userId: string, userRoleNames: string[]): Promise<JobVacancyDocument> {
+  async create(createJobVacancyDto: CreateJobVacancyDto, userId: string, userRoleNames: string[], tenantId?: string): Promise<JobVacancyDocument> {
     const isAdmin = userRoleNames.includes('Admin');
     const isEmployee = userRoleNames.includes('Employee');
 
@@ -37,18 +37,25 @@ export class JobVacanciesService {
 
     const candidateDataSchema = createJobVacancyDto.candidateDataSchema || template.candidateDataSchema;
 
-    const vacancyData = {
+    const vacancyData: any = {
       ...createJobVacancyDto,
       candidateDataSchema,
       createdBy: userId
     };
+    if (tenantId) {
+      vacancyData.tenantId = tenantId;
+    }
 
     const vacancy = await this.jobVacancyModel.create(vacancyData);
     return vacancy.toObject();
   }
 
-  async findAll(clientId?: string, userId?: string, userRoleNames?: string[], page: number = 1, limit: number = 10): Promise<{ data: JobVacancyDocument[]; total: number; page: number; limit: number; totalPages: number }> {
+  async findAll(clientId?: string, userId?: string, userRoleNames?: string[], tenantId?: string, page: number = 1, limit: number = 10): Promise<{ data: any[]; total: number; page: number; limit: number; totalPages: number }> {
     const query: any = { isActive: true };
+
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
 
     if (clientId) {
       query.client = clientId;
@@ -86,8 +93,12 @@ export class JobVacanciesService {
     };
   }
 
-  async findOne(id: string, userId?: string, userRoleNames?: string[]): Promise<JobVacancyDocument> {
-    const vacancy = await this.jobVacancyModel.findById(id)
+  async findOne(id: string, userId?: string, userRoleNames?: string[], tenantId?: string): Promise<JobVacancyDocument> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const vacancy = await this.jobVacancyModel.findOne(query)
       .populate('client', 'name')
       .populate('jobTemplate', 'name')
       .populate('assignedAgencies', 'name')
@@ -108,8 +119,12 @@ export class JobVacanciesService {
     return vacancy;
   }
 
-  async update(id: string, updateJobVacancyDto: UpdateJobVacancyDto, userId: string, userRoleNames: string[]): Promise<JobVacancyDocument> {
-    const vacancy = await this.jobVacancyModel.findById(id).lean().exec();
+  async update(id: string, updateJobVacancyDto: UpdateJobVacancyDto, userId: string, userRoleNames: string[], tenantId?: string): Promise<any> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const vacancy = await this.jobVacancyModel.findOne(query).lean().exec();
 
     if (!vacancy) {
       throw new NotFoundException('Job vacancy not found');
@@ -122,33 +137,34 @@ export class JobVacanciesService {
       throw new ForbiddenException('Only admins and employees can update job vacancies');
     }
 
+    const updateData: any = { ...updateJobVacancyDto };
+
     if (!isAdmin && isEmployee) {
       if (vacancy.createdBy.toString() !== userId) {
         throw new ForbiddenException('You can only update job vacancies you created');
       }
 
-      if (updateJobVacancyDto.client) {
-        const hasAccess = await this.checkEmployeeAccess(updateJobVacancyDto.client, userId);
+      if (updateData.client) {
+        const hasAccess = await this.checkEmployeeAccess(updateData.client, userId);
         if (!hasAccess) {
           throw new ForbiddenException('You can only assign job vacancies to your assigned clients');
         }
       }
     }
-
-    if (updateJobVacancyDto.jobTemplate) {
-      const template = await this.jobTemplateModel.findById(updateJobVacancyDto.jobTemplate).lean().exec();
+    if (updateData.jobTemplate) {
+      const template = await this.jobTemplateModel.findById(updateData.jobTemplate).lean().exec();
       if (!template) {
         throw new NotFoundException('Job template not found');
       }
 
-      if (!updateJobVacancyDto.candidateDataSchema) {
-        updateJobVacancyDto.candidateDataSchema = template.candidateDataSchema;
+      if (!updateData.candidateDataSchema) {
+        updateData.candidateDataSchema = (template as any).candidateDataSchema;
       }
     }
 
     const updatedVacancy = await this.jobVacancyModel.findByIdAndUpdate(
       id,
-      updateJobVacancyDto,
+      updateData,
       { new: true }
     )
       .populate('client', 'name')
@@ -162,11 +178,15 @@ export class JobVacanciesService {
       throw new NotFoundException('Job vacancy not found');
     }
 
-    return updatedVacancy as any;
+    return updatedVacancy;
   }
 
-  async remove(id: string, userId: string, userRoleNames: string[]): Promise<void> {
-    const vacancy = await this.jobVacancyModel.findById(id).lean().exec();
+  async remove(id: string, userId: string, userRoleNames: string[], tenantId?: string): Promise<void> {
+    const query: any = { _id: id };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const vacancy = await this.jobVacancyModel.findOne(query).lean().exec();
 
     if (!vacancy) {
       throw new NotFoundException('Job vacancy not found');
@@ -188,8 +208,12 @@ export class JobVacanciesService {
     await this.jobVacancyModel.findByIdAndUpdate(id, { isActive: false }).exec();
   }
 
-  async getCandidatesByJob(jobId: string, userId?: string, userRoleNames?: string[]): Promise<any[]> {
-    const vacancy = await this.jobVacancyModel.findById(jobId).lean().exec();
+  async getCandidatesByJob(jobId: string, userId?: string, userRoleNames?: string[], tenantId?: string): Promise<any[]> {
+    const query: any = { _id: jobId };
+    if (tenantId) {
+      query.tenantId = tenantId;
+    }
+    const vacancy = await this.jobVacancyModel.findOne(query).lean().exec();
 
     if (!vacancy) {
       throw new NotFoundException('Job vacancy not found');

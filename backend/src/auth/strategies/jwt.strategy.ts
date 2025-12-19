@@ -40,6 +40,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: user._id.toString(),
       email: user.email,
       fullName: user.fullName,
+      tenantId: user.tenantId ? user.tenantId.toString() : null,
       roles: roleIds,
       roleNames,
       permissions

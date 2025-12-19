@@ -20,6 +20,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { PaginationDto, PaginatedResponseDto } from '../common/dto/pagination.dto';
+import { Audit } from '../audit/decorators/audit.decorator';
+import { AuditAction, AuditResource } from '../audit/schemas/audit-log.schema';
 
 @ApiTags('Clients')
 @ApiBearerAuth('JWT-auth')
@@ -34,6 +36,7 @@ export class ClientsController {
   @Post()
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.CREATE, AuditResource.CLIENT)
   @ApiOperation({ summary: 'Create client', description: 'Create a new client. Admin only.' })
   @ApiResponse({ status: 201, description: 'Client created successfully', type: ClientResponseDto })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
@@ -41,7 +44,7 @@ export class ClientsController {
     @Body() createClientDto: CreateClientDto,
     @GetUser() user: any
   ): Promise<ClientResponseDto> {
-    const client = await this.clientsService.create(createClientDto, user.id);
+    const client = await this.clientsService.create(createClientDto, user.id, user.tenantId);
     return this.mapToResponseDto(client);
   }
 
@@ -61,6 +64,7 @@ export class ClientsController {
     const result = await this.clientsService.findAll(
       user.id,
       user.roleNames || [],
+      user.tenantId,
       pagination.page,
       pagination.limit
     );
@@ -80,13 +84,14 @@ export class ClientsController {
   @ApiResponse({ status: 404, description: 'Client not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - Access denied' })
   async findOne(@Param('id') id: string, @GetUser() user: any): Promise<ClientResponseDto> {
-    const client = await this.clientsService.findOne(id, user.id, user.roleNames || []);
+    const client = await this.clientsService.findOne(id, user.id, user.roleNames || [], user.tenantId);
     return this.mapToResponseDto(client);
   }
 
   @Patch(':id')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.UPDATE, AuditResource.CLIENT)
   @ApiOperation({ summary: 'Update client', description: 'Update a client. Admin only.' })
   @ApiResponse({ status: 200, description: 'Client updated successfully', type: ClientResponseDto })
   @ApiResponse({ status: 404, description: 'Client not found' })
@@ -96,19 +101,20 @@ export class ClientsController {
     @Body() updateClientDto: UpdateClientDto,
     @GetUser() user: any
   ): Promise<ClientResponseDto> {
-    const client = await this.clientsService.update(id, updateClientDto, user.id, user.roleNames || []);
+    const client = await this.clientsService.update(id, updateClientDto, user.id, user.roleNames || [], user.tenantId);
     return this.mapToResponseDto(client);
   }
 
   @Delete(':id')
   @Version('1')
   @Roles('Admin')
+  @Audit(AuditAction.DELETE, AuditResource.CLIENT)
   @ApiOperation({ summary: 'Delete client', description: 'Soft delete a client. Admin only.' })
   @ApiResponse({ status: 200, description: 'Client deleted successfully' })
   @ApiResponse({ status: 404, description: 'Client not found' })
   @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
   async remove(@Param('id') id: string, @GetUser() user: any): Promise<{ message: string }> {
-    await this.clientsService.remove(id, user.id, user.roleNames || []);
+    await this.clientsService.remove(id, user.id, user.roleNames || [], user.tenantId);
     return { message: 'Client deleted successfully' };
   }
 

@@ -5,7 +5,10 @@ export type RoleDocument = Role & Document;
 
 @Schema({ timestamps: true })
 export class Role {
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'Tenant', index: true })
+  tenantId: Types.ObjectId;
+
+  @Prop({ required: true, index: true })
   name: string;
 
   @Prop()
@@ -20,6 +23,6 @@ export class Role {
 
 export const RoleSchema = SchemaFactory.createForClass(Role);
 
-RoleSchema.index({ name: 1 }, { unique: true });
+RoleSchema.index({ name: 1, tenantId: 1 }, { unique: true });
 RoleSchema.index({ isActive: 1 });
 

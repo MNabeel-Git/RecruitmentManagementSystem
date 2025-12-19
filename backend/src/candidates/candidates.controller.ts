@@ -20,6 +20,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { PaginationDto, PaginatedResponseDto } from '../common/dto/pagination.dto';
+import { Audit } from '../audit/decorators/audit.decorator';
+import { AuditAction, AuditResource } from '../audit/schemas/audit-log.schema';
 
 @ApiTags('Candidates')
 @ApiBearerAuth('JWT-auth')
@@ -34,6 +36,7 @@ export class CandidatesController {
   @Post()
   @Version('1')
   @Roles('Agency')
+  @Audit(AuditAction.CREATE, AuditResource.CANDIDATE)
   @ApiOperation({
     summary: 'Create candidate',
     description: 'Create a new candidate. Agency users can only add candidates to jobs assigned to their agency. Candidate data must follow the job vacancy schema.'
@@ -45,7 +48,7 @@ export class CandidatesController {
     @Body() createCandidateDto: CreateCandidateDto,
     @GetUser() user: any
   ): Promise<CandidateResponseDto> {
-    const candidate = await this.candidatesService.create(createCandidateDto, user.id, user.roleNames || []);
+    const candidate = await this.candidatesService.create(createCandidateDto, user.id, user.roleNames || [], user.tenantId);
     return this.mapToResponseDto(candidate);
   }
 
@@ -68,6 +71,7 @@ export class CandidatesController {
       jobVacancyId,
       user?.id,
       user?.roleNames || [],
+      user?.tenantId,
       pagination?.page,
       pagination?.limit
     );
@@ -90,13 +94,14 @@ export class CandidatesController {
     @Param('id') id: string,
     @GetUser() user: any
   ): Promise<CandidateResponseDto> {
-    const candidate = await this.candidatesService.findOne(id, user.id, user.roleNames || []);
+    const candidate = await this.candidatesService.findOne(id, user.id, user.roleNames || [], user.tenantId);
     return this.mapToResponseDto(candidate);
   }
 
   @Patch(':id')
   @Version('1')
   @Roles('Agency')
+  @Audit(AuditAction.UPDATE, AuditResource.CANDIDATE)
   @ApiOperation({
     summary: 'Update candidate',
     description: 'Update a candidate. Agency users can only update candidates they created. Candidate data must follow the job vacancy schema.'
@@ -110,13 +115,14 @@ export class CandidatesController {
     @Body() updateCandidateDto: UpdateCandidateDto,
     @GetUser() user: any
   ): Promise<CandidateResponseDto> {
-    const candidate = await this.candidatesService.update(id, updateCandidateDto, user.id, user.roleNames || []);
+    const candidate = await this.candidatesService.update(id, updateCandidateDto, user.id, user.roleNames || [], user.tenantId);
     return this.mapToResponseDto(candidate);
   }
 
   @Delete(':id')
   @Version('1')
   @Roles('Agency')
+  @Audit(AuditAction.DELETE, AuditResource.CANDIDATE)
   @ApiOperation({
     summary: 'Delete candidate',
     description: 'Soft delete a candidate. Agency users can only delete candidates they created.'
@@ -128,7 +134,7 @@ export class CandidatesController {
     @Param('id') id: string,
     @GetUser() user: any
   ): Promise<{ message: string }> {
-    await this.candidatesService.remove(id, user.id, user.roleNames || []);
+    await this.candidatesService.remove(id, user.id, user.roleNames || [], user.tenantId);
     return { message: 'Candidate deleted successfully' };
   }
 

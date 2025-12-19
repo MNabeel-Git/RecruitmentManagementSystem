@@ -19,6 +19,9 @@ export class JobTemplate {
   @Prop()
   description: string;
 
+  @Prop({ type: Types.ObjectId, ref: 'Tenant', required: true, index: true })
+  tenantId: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'Client', required: true, index: true })
   client: Types.ObjectId;
 
@@ -45,4 +48,5 @@ export const JobTemplateSchema = SchemaFactory.createForClass(JobTemplate);
 JobTemplateSchema.index({ client: 1 });
 JobTemplateSchema.index({ isActive: 1 });
 JobTemplateSchema.index({ name: 1 });
+JobTemplateSchema.index({ tenantId: 1 });
 

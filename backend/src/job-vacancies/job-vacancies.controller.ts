@@ -20,6 +20,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { PaginationDto, PaginatedResponseDto } from '../common/dto/pagination.dto';
+import { Audit } from '../audit/decorators/audit.decorator';
+import { AuditAction, AuditResource } from '../audit/schemas/audit-log.schema';
 
 @ApiTags('Job Vacancies')
 @ApiBearerAuth('JWT-auth')
@@ -34,6 +36,7 @@ export class JobVacanciesController {
   @Post()
   @Version('1')
   @Roles('Admin', 'Employee')
+  @Audit(AuditAction.CREATE, AuditResource.JOB_VACANCY)
   @ApiOperation({
     summary: 'Create job vacancy',
     description: 'Create a new job vacancy. Employees can create for their assigned clients only.'
@@ -44,7 +47,7 @@ export class JobVacanciesController {
     @Body() createJobVacancyDto: CreateJobVacancyDto,
     @GetUser() user: any
   ): Promise<JobVacancyResponseDto> {
-    const vacancy = await this.jobVacanciesService.create(createJobVacancyDto, user.id, user.roleNames || []);
+    const vacancy = await this.jobVacanciesService.create(createJobVacancyDto, user.id, user.roleNames || [], user.tenantId);
     return this.mapToResponseDto(vacancy);
   }
 
@@ -67,6 +70,7 @@ export class JobVacanciesController {
       clientId,
       user?.id,
       user?.roleNames || [],
+      user?.tenantId,
       pagination?.page,
       pagination?.limit
     );
@@ -89,7 +93,7 @@ export class JobVacanciesController {
     @Param('id') id: string,
     @GetUser() user?: any
   ): Promise<JobVacancyResponseDto> {
-    const vacancy = await this.jobVacanciesService.findOne(id, user?.id, user?.roleNames || []);
+    const vacancy = await this.jobVacanciesService.findOne(id, user?.id, user?.roleNames || [], user?.tenantId);
     return this.mapToResponseDto(vacancy);
   }
 
@@ -106,12 +110,13 @@ export class JobVacanciesController {
     @Param('id') id: string,
     @GetUser() user?: any
   ): Promise<any[]> {
-    return this.jobVacanciesService.getCandidatesByJob(id, user?.id, user?.roleNames || []);
+    return this.jobVacanciesService.getCandidatesByJob(id, user?.id, user?.roleNames || [], user?.tenantId);
   }
 
   @Patch(':id')
   @Version('1')
   @Roles('Admin', 'Employee')
+  @Audit(AuditAction.UPDATE, AuditResource.JOB_VACANCY)
   @ApiOperation({
     summary: 'Update job vacancy',
     description: 'Update a job vacancy. Employees can only update vacancies they created. Edits do not affect the original template.'
@@ -124,13 +129,14 @@ export class JobVacanciesController {
     @Body() updateJobVacancyDto: UpdateJobVacancyDto,
     @GetUser() user: any
   ): Promise<JobVacancyResponseDto> {
-    const vacancy = await this.jobVacanciesService.update(id, updateJobVacancyDto, user.id, user.roleNames || []);
+    const vacancy = await this.jobVacanciesService.update(id, updateJobVacancyDto, user.id, user.roleNames || [], user.tenantId);
     return this.mapToResponseDto(vacancy);
   }
 
   @Delete(':id')
   @Version('1')
   @Roles('Admin', 'Employee')
+  @Audit(AuditAction.DELETE, AuditResource.JOB_VACANCY)
   @ApiOperation({
     summary: 'Delete job vacancy',
     description: 'Soft delete a job vacancy. Employees can only delete vacancies they created.'
@@ -142,7 +148,7 @@ export class JobVacanciesController {
     @Param('id') id: string,
     @GetUser() user: any
   ): Promise<{ message: string }> {
-    await this.jobVacanciesService.remove(id, user.id, user.roleNames || []);
+    await this.jobVacanciesService.remove(id, user.id, user.roleNames || [], user.tenantId);
     return { message: 'Job vacancy deleted successfully' };
   }
 
